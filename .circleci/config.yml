@@ -1,20 +1,44 @@
-# CircleCI configuration for Dockerhub
+# CircleCI configuration for
+# DevPhilB/sails-test-circle
+
+# CircleCI version
 version: 2.1
 
+# CircleCI jobs
 jobs:
-  build:
+  # Test configuration
+  test:
+    # Node.js Docker image for VM
+    docker:
+    - image: circleci/node:erbium
+    # All steps for test
+    steps:
+      # Checkout branch to VM
+      - checkout
+      # Run Jest
+      - run:
+          name: Run tests
+          command: |
+            cd sails-test
+            npm install
+            npm run test
+  
+  # Build and deploy configuration
+  build-deploy:
+    # Node.js Docker image for VM
     docker:
       - image: circleci/node:erbium
-
-
-    working_directory: ~/repo
-
+    
+    # All steps for build
     steps:
+      # Checkout branch to VM
       - checkout
-
+      
+      # Allow running docker on VM
       - setup_remote_docker:
           docker_layer_caching: false
 
+      # Install Docker client on VM
       - run:
           name: Install Docker client
           command: |
@@ -24,6 +48,7 @@ jobs:
             tar -xz -C /tmp -f /tmp/docker-$VER.tgz
             sudo mv /tmp/docker/* /usr/bin
 
+      # Build Docker image on VM and push it to Docker Hub
       - run:
           name: Build and push Docker image
           command: |
@@ -32,6 +57,17 @@ jobs:
             docker login -u $DOCKER_USER -p $DOCKER_PASS
             docker push tvsjsdock/sails-test:$TAG
 
-    # TODO
-    # test:
-    # ...
+# Running tests always and build-deploy only if changes (pull requests) happen on master
+workflows:
+   version: 2
+   test-build-deploy:
+     jobs:
+      # Run test job
+      - test
+      # Run build-deploy job
+      - build-deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master
