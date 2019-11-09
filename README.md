@@ -1,2 +1,2 @@
-# sails-test
-Testing Sails.js
+# sails-test-circle
+Sails.js & CircleCI
